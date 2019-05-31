@@ -21,7 +21,7 @@ namespace PullRequestBot
             // What do you store in here?
             // 1. the number of the PR and metadata (Azure DevOps / Organization / Project / Repo etc. Need more investiation)
             // 2. Already tracked event (e.g. create a work item by annotation of the comment. In this case, comment id will be the one.)
-
+            return "";
         }
 
         [FunctionName("PullRequestEntity")]
@@ -57,8 +57,13 @@ namespace PullRequestBot
 
     public class PullRequestTable
     {
+        // Project URL of Azure DevOps
         public string PartitionKey { get; set; }
+        // Pull Request Number
         public string RowKey { get; set; }
+        public string RepositoryId { get; set; }
+        public string EntityId { get; set; }
         public string State { get; set; }
+
     }
 }
