@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.152.0-preview" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.152.0-preview" />
   </ItemGroup>
 
 </Project>

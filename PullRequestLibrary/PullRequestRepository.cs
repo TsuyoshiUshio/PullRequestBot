@@ -1,38 +1,32 @@
-﻿using PullRequestLibrary.Generated.PRCreated;
-using PullRequestLibrary.Generated.PRThread;
-using PullRequestLibrary.Model;
-using System;
+﻿using Microsoft.TeamFoundation.SourceControl.WebApi;
 using System.Collections.Generic;
-using System.Net.Mime;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PullRequestLibrary
 {
     public interface IPullRequestRepository
     {
-        Task<PRCreated> CreatePRCommentAsync(string repositoryId, string pullRequestId, string threadId, PullRequestComment payload);
-        Task<PRThread> GetPRThreadAsync(string repositoryId, string pullRequestId);
+        Task<Comment> CreatePRCommentAsync(Comment comment, string repositoryId, int pullRequestId, int threadId);
+        Task<List<GitPullRequestCommentThread>> GetPRThreadAsync(string repositoryId, int pullRequestId);
     }
 
     public class PullRequestRepository : IPullRequestRepository
     {
-        private IRestClientContext context;
-        public PullRequestRepository(IRestClientContext context)
+        private GitHttpClientBase client;
+
+        public PullRequestRepository(GitHttpClientBase client)
         {
-            this.context = context;
+            this.client = client;
         }
 
-        public Task<PRThread> GetPRThreadAsync(string repositoryId, string pullRequestId)
+        public Task<List<GitPullRequestCommentThread>> GetPRThreadAsync(string repositoryId, int pullRequestId)
         {
-            return context.GetAsync<PRThread>($"/csedevops/DevSecOps/_apis/git/repositories/{repositoryId}/pullRequests/{pullRequestId}/threads?api-version=5.0");
+            return client.GetThreadsAsync(repositoryId, pullRequestId);
         }
 
-        public Task<PRCreated> CreatePRCommentAsync(string repositoryId, string pullRequestId, string threadId, PullRequestComment payload)
+        public Task<Comment> CreatePRCommentAsync(Comment comment, string repositoryId, int pullRequestId, int threadId)
         {
-            return context.PostAsync<PullRequestComment, PRCreated>(
-                $"/csedevops/DevSecOps/_apis/git/repositories/{repositoryId}/pullRequests/{pullRequestId}/threads/{threadId}/comments?api-version=5.0",
-                payload);
+            return client.CreateCommentAsync(comment, repositoryId, pullRequestId, threadId);
         }
     }
 }

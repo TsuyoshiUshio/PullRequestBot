@@ -1,4 +1,6 @@
-﻿using PullRequestLibrary.Generated.WorkItemCreated;
+﻿using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using PullRequestLibrary.Model;
 using System;
 using System.Collections.Generic;
@@ -9,24 +11,26 @@ namespace PullRequestLibrary
 {
     public interface IWorkItemRepository
     {
-        Task<WorkItemCreated> CreateWorkItem(WorkItem workItem);
+        Task<WorkItem> CreateWorkItem(WorkItemSource workItem);
     }
 
     public class WorkItemRepository : IWorkItemRepository
     {
-        private IRestClientContext context;
+        private WorkItemTrackingHttpClientBase client;
 
-        public WorkItemRepository(IRestClientContext context)
+        public WorkItemRepository(WorkItemTrackingHttpClientBase client)
         {
-            this.context = context;
+            this.client = client;
         }
 
-        public Task<WorkItemCreated> CreateWorkItem(WorkItem workItem)
-        {
-            var organization = "csedevops";
+
+        public Task<WorkItem> CreateWorkItem(WorkItemSource workItem)
+        { 
             var project = "DevSecOps";
             var type = "Bug";
-            return context.PostAsync<List<WorkItemField>, WorkItemCreated>($"https://dev.azure.com/{organization}/{project}/_apis/wit/workitems/${type}?api-version=5.0", workItem.ToWorkItemFields());
+
+            var document = workItem.ToJsonPatchDocument();
+            return client.CreateWorkItemAsync(document, project, type);
         }
     }
 }
