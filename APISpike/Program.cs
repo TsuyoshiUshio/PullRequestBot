@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -45,27 +47,13 @@ namespace APISpike
             GitHttpClient client = connection.GetClient<GitHttpClient>();
             var result = await client.GetPullRequestAsync(RepositoryId, 53);
             var thtreads = await client.GetThreadsAsync(RepositoryId, 53);
-
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid project, string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid project, Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string project, string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-            //
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-            //
-            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string project, Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
-
-            var clientMock = new Mock<GitHttpClientBase>().Setup(p =>
-            p.GetThreadsAsync(RepositoryId, 53, It.IsAny<int?>, It.IsAny<int?>, It.IsAny<object>, It.IsAny<CancellationToken>()).ReturnsAsync(new List<GitPullRequestCommentThread>()));
-
-  
-     
-           
-
-        }
+   
+            var clientMock = new Mock<GitHttpClientBase>(MockBehavior.Strict, new Uri("https://foo.bar"), new VssCredentials());
+            clientMock.Setup(p =>
+             p.GetThreadsAsync(RepositoryId, 53, It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<object>(), It.IsAny<CancellationToken>())).ReturnsAsync(new List<GitPullRequestCommentThread>()).Verifiable();
+            var r = clientMock.Object.GetThreadsAsync(RepositoryId, 53);
+            clientMock.Verify();
+       }
 
         public static async Task ExecWithRestAsync()
         {
