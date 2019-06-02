@@ -3,7 +3,7 @@
 namespace PullRequestLibrary.Generated.PRCreated
 {
 
-    public class Rootobject
+    public class PRCreated
     {
         public Repository repository { get; set; }
         public int pullRequestId { get; set; }

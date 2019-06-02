@@ -5,7 +5,7 @@ using System.Text;
 namespace PullRequestLibrary.Generated.PRThread
 {
 
-    public class Rootobject
+    public class PRThread
     {
         public Value[] value { get; set; }
         public int count { get; set; }

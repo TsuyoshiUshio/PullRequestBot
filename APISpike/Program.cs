@@ -1,9 +1,17 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
+using Moq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace APISpike
 {
@@ -17,12 +25,49 @@ namespace APISpike
                 .AddJsonFile("appsettings.json");
             Configuration = builder.Build();
 
-            ExecAsync().GetAwaiter().GetResult();
+            //ExecWithRestAsync().GetAwaiter().GetResult();
+            ExecWithClientLibrary().GetAwaiter().GetResult();
             Console.ReadLine();
 
         }
 
-        public static async Task ExecAsync()
+        public static async Task ExecWithClientLibrary()
+        {
+            var BaseURL = Configuration["BaseURL"];
+            var PAT = Configuration["AzureDevOpsPAT"];
+            var RepositoryId = Configuration["RepositoryId"];
+            var uri = new Uri(BaseURL);
+            var organizationURL = BaseURL.Substring(0, BaseURL.LastIndexOf('/'));
+      
+            VssConnection connection = new VssConnection(new Uri(organizationURL), new VssBasicCredential(string.Empty, PAT));
+            // List PR thread. 
+
+            GitHttpClient client = connection.GetClient<GitHttpClient>();
+            var result = await client.GetPullRequestAsync(RepositoryId, 53);
+            var thtreads = await client.GetThreadsAsync(RepositoryId, 53);
+
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid project, string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid project, Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string project, string repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+            //
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+            //
+            // public virtual Task<List<GitPullRequestCommentThread>> GetThreadsAsync(string project, Guid repositoryId, int pullRequestId, int? iteration = null, int? baseIteration = null, object userState = null, CancellationToken cancellationToken = default);
+
+            var clientMock = new Mock<GitHttpClientBase>().Setup(p =>
+            p.GetThreadsAsync(RepositoryId, 53, It.IsAny<int?>, It.IsAny<int?>, It.IsAny<object>, It.IsAny<CancellationToken>()).ReturnsAsync(new List<GitPullRequestCommentThread>()));
+
+  
+     
+           
+
+        }
+
+        public static async Task ExecWithRestAsync()
         {
             var BaseURL = Configuration["BaseURL"];
             var PAT = Configuration["AzureDevOpsPAT"];
@@ -55,8 +100,7 @@ namespace APISpike
             } catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-            }
-       
+            }      
         }
     }
 }

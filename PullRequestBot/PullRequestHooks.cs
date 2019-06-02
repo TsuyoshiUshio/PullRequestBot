@@ -34,6 +34,18 @@ namespace PullRequestBot
             return (ActionResult)new OkObjectResult($"Pull Request Registered.");
         }
 
+        // This method will be replaced with Timer Trigger. 
+        // During the time of debugging, I put it on the 
+        [FunctionName("Polling")]
+        public static async Task<IActionResult> PollingAsync(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [OrchestrationClient]IDurableOrchestrationClient client,
+            ILogger log)
+        {
+
+            return (ActionResult)new OkObjectResult($"Polling Executed");
+        }
+
 
     }
 }
