@@ -15,7 +15,7 @@ namespace PullRequestLibrary
 
     public class RestClientContext : IRestClientContext
     {
-        private HttpClient client;
+        internal HttpClient client; // internal for testability
 
         public RestClientContext(HttpClient client)
         {

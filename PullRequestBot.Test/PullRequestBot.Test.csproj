@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PullRequestBot\PullRequestBot.csproj" />
-    <ProjectReference Include="..\PullRequestLibrary\PullRequestLibrary.csproj" />
   </ItemGroup>
 
 </Project>

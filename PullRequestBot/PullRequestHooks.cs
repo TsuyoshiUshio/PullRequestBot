@@ -7,13 +7,36 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using PullRequestLibrary;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
+using Dynamitey;
 
 namespace PullRequestBot
 {
-    public static class PullRequestHooks
+    public class PullRequestHooks
     {
+        private ICIHookService service;
+
+        public PullRequestHooks(ICIHookService service)
+        {
+            this.service = service;
+        }
+
+        [FunctionName("CIHook")]
+        public async Task<IActionResult> CIHook(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+        ILogger log)
+        {
+            string pullRequestId = req.Query["pullRequestId"];
+            string projectKey = req.Query["projectKey"];
+            string commitId = req.Query["commitId"];
+            log.LogInformation($"PullRequestId: {pullRequestId} ProjectKey: {projectKey}");
+            await service.GenerateAnalysisComment(pullRequestId, projectKey, commitId);
+            return (ActionResult)new OkObjectResult($"Done");
+        }
+
         [FunctionName("CreatePullRequest")]
-        public static async Task<IActionResult> CreatePullRequestAsync(
+        public async Task<IActionResult> CreatePullRequestAsync(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             [OrchestrationClient]IDurableOrchestrationClient client,
             ILogger log)
@@ -37,7 +60,7 @@ namespace PullRequestBot
         // This method will be replaced with Timer Trigger. 
         // During the time of debugging, I put it on the 
         [FunctionName("Polling")]
-        public static async Task<IActionResult> PollingAsync(
+        public async Task<IActionResult> PollingAsync(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             [OrchestrationClient]IDurableOrchestrationClient client,
             ILogger log)
