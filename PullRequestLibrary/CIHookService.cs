@@ -39,6 +39,7 @@ namespace PullRequestLibrary
                     await gitHubRepository.CreatePullRequestReviewComment(
                         new Model.Comment
                         {
+                            Body = $"[{issue.type}] {issue.message}",
                             RepositoryOnwer = repositoryContext.Owner,
                             RepositoryName = repositoryContext.Name,
                             CommitId = commitId,
