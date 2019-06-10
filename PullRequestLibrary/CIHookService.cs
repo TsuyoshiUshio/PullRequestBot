@@ -20,9 +20,10 @@ namespace PullRequestLibrary
         private IGitHubRepositoryContext repositoryContext;
         private ISonarCloudRepository sonarCloudRepository;
 
-        public CIHookService(IGitHubRepository gitHubRepository, ISonarCloudRepository sonarCloudRepository)
+        public CIHookService(IGitHubRepository gitHubRepository, IGitHubRepositoryContext repositoryContext, ISonarCloudRepository sonarCloudRepository)
         {
             this.gitHubRepository = gitHubRepository;
+            this.repositoryContext = repositoryContext;
             this.sonarCloudRepository = sonarCloudRepository;
         }
 

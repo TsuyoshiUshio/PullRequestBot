@@ -14,7 +14,7 @@ namespace PullRequestLibrary.Provider.GitHub
 
     public class GitHubRepository : IGitHubRepository
     {
-        private IGitHubClient client;
+        internal IGitHubClient client; // internal for testability
         public GitHubRepository(IGitHubClient client)
         {
             this.client = client;

@@ -6,6 +6,7 @@ using Xunit;
 using PullRequestBot;
 using PullRequestLibrary;
 using PullRequestLibrary.Provider.GitHub;
+using PullRequestLibrary.Provider.SonarCloud;
 
 namespace PullRequestBot.Test
 {
@@ -23,6 +24,7 @@ namespace PullRequestBot.Test
             // SonarCloud setup
             Environment.SetEnvironmentVariable("SonarCloudPAT", sonarCloudPat);
         }
+
         [Fact]
         public void GitHubSettingsTest()
         {
@@ -67,6 +69,27 @@ namespace PullRequestBot.Test
             var iContext = provider.GetService<IRestClientContext>();
             var context = (RestClientContext)iContext;
             Assert.Equal(expectedAuthorizationParameter, context.client.DefaultRequestHeaders.Authorization.Parameter);
+        }
+
+        [Fact]
+        public void SetUpRepositories()
+        {
+            Setup("foo", "bar","baz","qux");
+            var startup = new Startup();
+            var mock = new WebJobsBuilderMock(new ServiceCollection());
+            startup.Configure(mock);
+            var provider = mock.Services.BuildServiceProvider();
+
+            var gitHubRepository = provider.GetService<IGitHubRepository>();
+            Assert.NotNull(gitHubRepository);
+            Assert.NotNull(((GitHubRepository)gitHubRepository).client);
+
+            var sonarCloudRepository = provider.GetService<ISonarCloudRepository>();
+            Assert.NotNull(sonarCloudRepository);
+            Assert.NotNull(((SonarCloudRepository)sonarCloudRepository).context);
+
+            var ciHookService = provider.GetService<ICIHookService>();
+            Assert.NotNull(ciHookService);
         }
 
         public class WebJobsBuilderMock : IWebJobsBuilder

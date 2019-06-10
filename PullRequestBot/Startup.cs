@@ -9,19 +9,29 @@ using System;
 using System.Net.Http;
 using Octokit;
 using PullRequestLibrary;
+using PullRequestLibrary.Provider.SonarCloud;
 
 [assembly: WebJobsStartupAttribute(typeof(Startup))]
 namespace PullRequestBot
 {
     public class Startup : IWebJobsStartup
     {
-        private static readonly string GitHubRepositoryOwner = Environment.GetEnvironmentVariable("GitHubRepositoryOwner");
-        private static readonly string GitHubRepositoryName = Environment.GetEnvironmentVariable("GitHubRepositoryName");
+        private const string GitHubRepositoryOwnerSetting = "GitHubRepositoryOwner";
+        private const string GitHubRepositoryNameSetting = "GitHubRepositoryName";
+        private const string GitHubPatSetting = "GitHubPAT";
+        private const string SonarCloudPatSetting = "SonarCloudPAT";
+
+        private static readonly string GitHubRepositoryOwner = Environment.GetEnvironmentVariable(GitHubRepositoryOwnerSetting);
+        private static readonly string GitHubRepositoryName = Environment.GetEnvironmentVariable(GitHubRepositoryNameSetting);
         public void Configure(IWebJobsBuilder builder)
         {
             builder.Services.AddSingleton<IGitHubRepositoryContext>(GetGitHubRepositoryContext());
             builder.Services.AddSingleton<IGitHubClient>(GetGitHubClient());
             builder.Services.AddSingleton<IRestClientContext>(GetRestClientContext());
+            builder.Services.AddSingleton<IGitHubRepository, GitHubRepository>();
+            builder.Services.AddSingleton<ISonarCloudRepository, SonarCloudRepository>();
+
+            builder.Services.AddSingleton<ICIHookService, CIHookService>();
         }
 
         private IGitHubRepositoryContext GetGitHubRepositoryContext()
@@ -36,14 +46,14 @@ namespace PullRequestBot
         private IGitHubClient GetGitHubClient()
         {
             var client = new GitHubClient(new ProductHeaderValue("PullRequestBot"));
-            var tokenAuth = new Credentials(GitHubRepositoryOwner, Environment.GetEnvironmentVariable("GitHubPAT"));
+            var tokenAuth = new Credentials(GitHubRepositoryOwner, Environment.GetEnvironmentVariable(GitHubPatSetting));
             client.Credentials = tokenAuth;
             return client;
         }
 
         private IRestClientContext GetRestClientContext()
         {
-            var sonarCloudPat = Environment.GetEnvironmentVariable("SonarCloudPAT");
+            var sonarCloudPat = Environment.GetEnvironmentVariable(SonarCloudPatSetting);
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic",
@@ -53,6 +63,8 @@ namespace PullRequestBot
             return new RestClientContext(client);
         }
 
+        // Connection Setting for Azure DevOps
+        // Currently not used. 
         private VssConnection CreateVssConnection()
         {
             string BaseURL = Environment.GetEnvironmentVariable("BaseURL");

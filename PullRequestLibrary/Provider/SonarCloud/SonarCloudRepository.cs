@@ -13,7 +13,7 @@ namespace PullRequestLibrary.Provider.SonarCloud
 
     public class SonarCloudRepository : ISonarCloudRepository
     {
-        private IRestClientContext context;
+        internal IRestClientContext context; // internal for testability
         public SonarCloudRepository(IRestClientContext context)
         {
             this.context = context;
