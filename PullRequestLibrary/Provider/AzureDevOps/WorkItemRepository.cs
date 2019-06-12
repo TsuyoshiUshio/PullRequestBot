@@ -1,13 +1,13 @@
 ﻿using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using PullRequestLibrary.Model;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using PullRequestLibrary.Model;
 
-namespace PullRequestLibrary
+namespace PullRequestLibrary.Provider.AzureDevOps
 {
     public interface IWorkItemRepository
     {

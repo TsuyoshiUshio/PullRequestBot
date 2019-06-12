@@ -1,10 +1,10 @@
 ﻿
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using PullRequestLibrary.Model;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PullRequestLibrary.Model;
 using Xunit;
 
 namespace PullRequestLibrary.Test.Model

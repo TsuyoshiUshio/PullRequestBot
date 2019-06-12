@@ -1,8 +1,8 @@
-﻿using PullRequestLibrary.Generated.SonarCloud.SearchIssue;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using PullRequestLibrary.Generated.SonarCloud.SearchIssue;
 
 namespace PullRequestLibrary.Provider.SonarCloud
 {

@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APISpike", "APISpike\APISpi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PullRequestLibrary.Test", "PullRequestLibrary.Test\PullRequestLibrary.Test.csproj", "{0910D5F4-9A73-46AE-8C28-7ECE3250FAD0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PullRequestBot.Test", "PullRequestBot.Test\PullRequestBot.Test.csproj", "{30EAE213-DBCD-428B-BE78-43FBF4EADA5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PullRequestBot.Test", "PullRequestBot.Test\PullRequestBot.Test.csproj", "{30EAE213-DBCD-428B-BE78-43FBF4EADA5A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

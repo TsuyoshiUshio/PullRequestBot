@@ -7,8 +7,11 @@ using PullRequestBot;
 using PullRequestLibrary.Provider.GitHub;
 using System;
 using System.Net.Http;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 using Octokit;
 using PullRequestLibrary;
+using PullRequestLibrary.Command;
+using PullRequestLibrary.Provider.AzureDevOps;
 using PullRequestLibrary.Provider.SonarCloud;
 
 [assembly: WebJobsStartupAttribute(typeof(Startup))]
@@ -20,6 +23,8 @@ namespace PullRequestBot
         private const string GitHubRepositoryNameSetting = "GitHubRepositoryName";
         private const string GitHubPatSetting = "GitHubPAT";
         private const string SonarCloudPatSetting = "SonarCloudPAT";
+        private const string AzureDevOpsBaseURL = "AzureDevOpsBaseURL";
+        private const string AzureDevOpsPAT = "AzureDevOpsPAT";
 
         private static readonly string GitHubRepositoryOwner = Environment.GetEnvironmentVariable(GitHubRepositoryOwnerSetting);
         private static readonly string GitHubRepositoryName = Environment.GetEnvironmentVariable(GitHubRepositoryNameSetting);
@@ -32,6 +37,12 @@ namespace PullRequestBot
             builder.Services.AddSingleton<ISonarCloudRepository, SonarCloudRepository>();
 
             builder.Services.AddSingleton<ICIHookService, CIHookService>();
+
+            VssConnection connection = CreateVssConnection();
+            builder.Services.AddSingleton<IWorkItemRepository>(
+                new WorkItemRepository(GetWorkItemTrackingHttpClient(connection)));
+
+            builder.Services.AddTransient<ICommandContext, CommandContext>();
         }
 
         private IGitHubRepositoryContext GetGitHubRepositoryContext()
@@ -63,12 +74,19 @@ namespace PullRequestBot
             return new RestClientContext(client);
         }
 
+        internal virtual WorkItemTrackingHttpClientBase GetWorkItemTrackingHttpClient(VssConnection connection)
+        {
+            
+            return connection.GetClient<WorkItemTrackingHttpClient>();
+        }
+
+
         // Connection Setting for Azure DevOps
         // Currently not used. 
         private VssConnection CreateVssConnection()
         {
-            string BaseURL = Environment.GetEnvironmentVariable("BaseURL");
-            string PAT = Environment.GetEnvironmentVariable("PAT");
+            string BaseURL = Environment.GetEnvironmentVariable(AzureDevOpsBaseURL);
+            string PAT = Environment.GetEnvironmentVariable(AzureDevOpsPAT);
             var uri = new Uri(BaseURL);
             var organizationURL = BaseURL.Substring(0, BaseURL.LastIndexOf('/'));
 

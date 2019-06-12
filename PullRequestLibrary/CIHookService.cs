@@ -1,11 +1,11 @@
 ﻿using Octokit;
-using PullRequestLibrary.Generated.SonarCloud.SearchIssue;
-using PullRequestLibrary.Provider.GitHub;
-using PullRequestLibrary.Provider.SonarCloud;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using PullRequestLibrary.Generated.SonarCloud.SearchIssue;
+using PullRequestLibrary.Provider.GitHub;
+using PullRequestLibrary.Provider.SonarCloud;
 
 namespace PullRequestLibrary
 {

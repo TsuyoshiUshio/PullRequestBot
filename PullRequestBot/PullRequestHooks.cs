@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using PullRequestLibrary;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Dynamitey;
+using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 
 namespace PullRequestBot
 {
@@ -32,6 +33,26 @@ namespace PullRequestBot
             string commitId = req.Query["commitId"];
             log.LogInformation($"PullRequestId: {pullRequestId} ProjectKey: {projectKey}");
             await service.GenerateAnalysisComment(pullRequestId, projectKey, commitId);
+            return (ActionResult)new OkObjectResult($"Done");
+        }
+
+        [FunctionName("GitHubPRCommentHook")]
+        public async Task<IActionResult> GitHubPRCommentHook(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
+            HttpRequest req,
+            ILogger log)
+        {
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            log.LogInformation(requestBody);
+            // Parse the request 
+            var comment = JsonConvert.DeserializeObject<PRCommentCreated>(requestBody);
+            // comment.comment.body
+            // Parse the command 
+
+            // Get the parent comment recursively
+            // Get the Single comment of the parent
+            // Create a work item  
+
             return (ActionResult)new OkObjectResult($"Done");
         }
     }

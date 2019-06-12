@@ -1,12 +1,18 @@
 using System;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
+using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
+using Moq;
 using Octokit;
 using Xunit;
 using PullRequestBot;
 using PullRequestLibrary;
 using PullRequestLibrary.Provider.GitHub;
 using PullRequestLibrary.Provider.SonarCloud;
+using PullRequestLibrary.Command;
+using PullRequestLibrary.Provider.AzureDevOps;
 
 namespace PullRequestBot.Test
 {
@@ -15,7 +21,10 @@ namespace PullRequestBot.Test
         private void Setup(string gitHubRepositoryOwner,
             string gitHubRepositoryName,
             string gitHubPat,
-            string sonarCloudPat)
+            string sonarCloudPat,
+            string azureDevOpsBaseUrl,
+            string azureDevOpsPat
+            )
         {
             // GitHub setup
             Environment.SetEnvironmentVariable("GitHubRepositoryOwner", gitHubRepositoryOwner);
@@ -23,6 +32,10 @@ namespace PullRequestBot.Test
             Environment.SetEnvironmentVariable("GitHubPAT", gitHubPat);
             // SonarCloud setup
             Environment.SetEnvironmentVariable("SonarCloudPAT", sonarCloudPat);
+            // AzureDevOps setup
+            Environment.SetEnvironmentVariable("AzureDevOpsBaseURL", azureDevOpsBaseUrl);
+            Environment.SetEnvironmentVariable("AzureDevOpsPAT", azureDevOpsPat);
+
         }
 
         [Fact]
@@ -34,9 +47,11 @@ namespace PullRequestBot.Test
             Setup(expectedGitHubRepositoryOwner, 
                 expectedGitHubRepositoryName,
                 expectedGitHubPat,
-                "qux");
+                "qux",
+                "https://dev.azure.com/quux/foobar",
+                "corge");
 
-            var startup = new Startup();
+            var startup = new StartupMock();
             var mock = new WebJobsBuilderMock(new ServiceCollection());
 
             startup.Configure(mock);
@@ -57,12 +72,14 @@ namespace PullRequestBot.Test
             Setup("bar",
                 "baz",
                 "qux",
-                sonarCloudPat);
+                sonarCloudPat,
+                "https://dev.azure.com/quux/foobar",
+                "corge");
 
             var expectedAuthorizationParameter = Convert.ToBase64String(
                 System.Text.Encoding.ASCII.GetBytes(
                     string.Format("{0}:{1}", sonarCloudPat, "")));
-            var startup = new Startup();
+            var startup = new StartupMock();
             var mock = new WebJobsBuilderMock(new ServiceCollection());
             startup.Configure(mock);
             var provider = mock.Services.BuildServiceProvider();
@@ -74,8 +91,8 @@ namespace PullRequestBot.Test
         [Fact]
         public void SetUpRepositories()
         {
-            Setup("foo", "bar","baz","qux");
-            var startup = new Startup();
+            Setup("foo", "bar","baz","qux", "https://dev.azure.com/quux/foobar", "corge");
+            var startup = new StartupMock();
             var mock = new WebJobsBuilderMock(new ServiceCollection());
             startup.Configure(mock);
             var provider = mock.Services.BuildServiceProvider();
@@ -90,6 +107,44 @@ namespace PullRequestBot.Test
 
             var ciHookService = provider.GetService<ICIHookService>();
             Assert.NotNull(ciHookService);
+        }
+
+        [Fact]
+        public void SetUpWorkItemRepository()
+        {
+            Setup("foo", "bar", "baz", "qux", "https://dev.azure.com/quux/foobar", "corge");
+            var startup = new StartupMock();
+            var mock = new WebJobsBuilderMock(new ServiceCollection());
+            startup.Configure(mock);
+            var provider = mock.Services.BuildServiceProvider();
+            var workItemRepository = provider.GetService<IWorkItemRepository>();
+            Assert.NotNull(workItemRepository);
+        }
+
+        [Fact]
+        public void SetupCommandHookService()
+        {
+            Setup("foo", "bar", "baz", "qux", "https://dev.azure.com/quux/foobar", "corge");
+            var startup = new StartupMock();
+            var mock = new WebJobsBuilderMock(new ServiceCollection());
+            startup.Configure(mock);
+            var provider = mock.Services.BuildServiceProvider();
+            var commandContext = provider.GetService<ICommandContext>();
+            Assert.NotNull(commandContext);
+
+
+        }
+
+        public class StartupMock : Startup
+        {
+            public VssConnection Connection { get; set; }
+            internal override WorkItemTrackingHttpClientBase GetWorkItemTrackingHttpClient(VssConnection connection)
+            {
+                Connection = connection;
+
+                var clientMock = new Mock<WorkItemTrackingHttpClientBase>(MockBehavior.Strict, new Uri("https://foo.bar"), new VssCredentials());
+                return clientMock.Object;
+            }
         }
 
         public class WebJobsBuilderMock : IWebJobsBuilder

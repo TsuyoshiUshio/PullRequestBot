@@ -14,6 +14,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using Microsoft.VisualStudio.Services.WebApi.Patch;
 
 namespace APISpike
 {
@@ -28,7 +29,9 @@ namespace APISpike
             Configuration = builder.Build();
 
             //ExecWithRestAsync().GetAwaiter().GetResult();
-            ExecWithClientLibrary().GetAwaiter().GetResult();
+            // ExecWithClientLibrary().GetAwaiter().GetResult();
+            CreateWorkItemSpike().GetAwaiter().GetResult();
+            Console.WriteLine("Done");
             Console.ReadLine();
 
         }
@@ -54,6 +57,31 @@ namespace APISpike
             var r = clientMock.Object.GetThreadsAsync(RepositoryId, 53);
             clientMock.Verify();
        }
+
+        public static async Task CreateWorkItemSpike()
+        {
+            var BaseURL = Configuration["BaseURL"];
+            var PAT = Configuration["AzureDevOpsPAT"];
+            var organizationURL = BaseURL.Substring(0, BaseURL.LastIndexOf('/'));
+            VssConnection connection = new VssConnection(new Uri(organizationURL), new VssBasicCredential(string.Empty, PAT));
+            WorkItemTrackingHttpClient client = connection.GetClient<WorkItemTrackingHttpClient>();
+
+            JsonPatchDocument document = new JsonPatchDocument();
+            document.Add(new JsonPatchOperation()
+            {
+                Operation = Operation.Add,
+                Path = "/fields/System.Title",
+                Value = "This is the title of Work Item."
+            });
+            document.Add(new JsonPatchOperation()
+            {
+                Operation = Operation.Add,
+                Path = "/fields/System.Description",
+                Value = "This is <b>description</b>. "
+            });
+
+            await client.CreateWorkItemAsync(document, "DevSecOps", "Task");
+        }
 
         public static async Task ExecWithRestAsync()
         {
