@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Moq;
 using PullRequestLibrary.Command;
 using Xunit;
 
@@ -11,7 +12,8 @@ namespace PullRequestLibrary.Test
         [Fact]
         public void ParseWorkItem()
         {
-            var command = new CommentHookService();
+            var contextMock = new Mock<ICommandContext>();
+            var command = new CommentHookService(contextMock.Object);
             var result = command.Parse(CommentHookService.PRCommandCreateWorkItemCommand);
             Assert.Equal(PRCommand.WorkItem, result);
             result = command.Parse(CommentHookService.PRCommandCreateWorkItemCommand);
@@ -21,7 +23,8 @@ namespace PullRequestLibrary.Test
         [Fact]
         public void ParseDoNothing()
         {
-            var command = new CommentHookService();
+            var contextMock = new Mock<ICommandContext>();
+            var command = new CommentHookService(contextMock.Object);
             var result = command.Parse("/foo, /bar, /baz");
             Assert.Equal(PRCommand.DoNothing, result);
         }
