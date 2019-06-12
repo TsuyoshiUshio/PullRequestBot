@@ -20,12 +20,10 @@ namespace PullRequestLibrary
 
         public async Task ExecuteCommentAsync(PRCommentCreated comment)
         {
-            // comment.comment.body
-            // Parse the command 
-
-            // Get the parent comment recursively
-            // Get the Single comment of the parent
-            // Create a work item
+            PRCommand pRCommand = Parse(comment?.comment?.body);
+            var command = CommandFactory.Create(pRCommand);
+            context.PRCommentCreated = comment;
+            await command.Execute(context);
 
             return;
         }
