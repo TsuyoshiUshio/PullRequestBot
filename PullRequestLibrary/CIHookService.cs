@@ -36,6 +36,7 @@ namespace PullRequestLibrary
                 var path = issue.component.Replace($"{projectKey}:", "");
                 if (path != projectKey)
                 {
+                    // TODO there is possibility of throttling. If it happens consider make it Activity and retry it. 
                     await gitHubRepository.CreatePullRequestReviewComment(
                         new Model.Comment
                         {

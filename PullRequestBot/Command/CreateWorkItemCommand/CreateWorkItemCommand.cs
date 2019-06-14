@@ -15,10 +15,12 @@ using System.Runtime.InteropServices.ComTypes;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Microsoft.WindowsAzure.Storage.Table;
+using Newtonsoft.Json.Linq;
+using PullRequestBot.Entity;
 using PullRequestLibrary.Model;
 using PullRequest = Octokit.PullRequest;
 
-namespace PullRequestBot.Command
+namespace PullRequestBot.Command.CreateWorkItemCommand
 {
     public class CreateWorkItemCommand
     {
@@ -44,7 +46,8 @@ namespace PullRequestBot.Command
             var comment = context.GetInput<PRCommentCreated>();
 
             // Get the parent review comment
-            var parentReviewComment = await context.CallActivityAsync<PullRequestReviewComment>("CreateWorkItemCommand_GetParentReview", comment);
+            // PullRequestReviewComment can't deserialize. 
+            var parentReviewComment = await context.CallActivityAsync<JObject>("CreateWorkItemCommand_GetParentReview", comment);
             // Get the State of the PullRequestState
             var pullRequestState =
                 await context.CallActivityAsync<PullRequestState>("CreateWorkItemCommand_GetPullRequestState", comment);
@@ -52,9 +55,10 @@ namespace PullRequestBot.Command
             // Ask the entity has duplication  
             string entityId = pullRequestState?.EntityId ?? context.NewGuid().ToString();
 
-            EntityId id = new EntityId();
+            EntityId id = new EntityId(nameof(PullRequestEntity), entityId);
+    
 
-            var pullRequestDetailContext = await context.CallEntityAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestStateContext), entityId), "get", null);
+            var pullRequestDetailContext = await context.CallEntityAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestEntity), entityId), "get", new PullRequestStateContext());
 
             // If you don't start CI however, already have a work item comment. (maybe it is rare case)
             pullRequestDetailContext = pullRequestDetailContext ?? new PullRequestStateContext();
@@ -74,13 +78,13 @@ namespace PullRequestBot.Command
             // update Entity 
 
             await context.CallEntityAsync<PullRequestStateContext>(
-                new EntityId(nameof(PullRequestStateContext), entityId), "update", pullRequestDetailContext);
+                new EntityId(nameof(PullRequestEntity), entityId), "update", pullRequestDetailContext);
 
             // update Status.
 
             pullRequestState = pullRequestState ?? new PullRequestState();
             pullRequestState.EntityId = entityId;
-            pullRequestState.PartitionKey = pullRequestState.PartitionKey ?? comment.repository.full_name;
+            pullRequestState.PartitionKey = pullRequestState.PartitionKey ?? comment.repository.full_name.ToPartitionKey();
             pullRequestState.RowKey = pullRequestState.RowKey ?? comment.pull_request.id.ToString(); 
 
             await context.CallActivityAsync("CreateWorkItemCommand_CreateOrUpdatePullRequestState", pullRequestState);
@@ -89,11 +93,20 @@ namespace PullRequestBot.Command
         }
 
         [FunctionName("CreateWorkItemCommand_GetParentReview")]
-        public async Task<PullRequestReviewComment> GetParentReviewAsync([ActivityTrigger] PRCommentCreated comment, ILogger log)
+        public async Task<JObject> GetParentReviewAsync([ActivityTrigger] PRCommentCreated comment, ILogger log)
         {
-            var comments = await _gitHubRepository.GetPullRequestReviewComments(comment.pull_request.id);
-            return comments
-                .FirstOrDefault(x => ((x.PullRequestReviewId == comment.comment.pull_request_review_id) && (x.InReplyToId is null)));
+
+            try
+            {
+                // GitHub Client Library's domain object can't serializable.
+                var result =  await _gitHubRepository.GetSingleComment(comment.comment.in_reply_to_id);
+                return result.ToJObject();
+            }
+            catch (Exception e)
+            {
+                // GitHub Client Library's exception can't serializable
+                throw new ArgumentException(e.Message);
+            }
         }
 
         [FunctionName("CreateWorkItemCommand_GetPullRequestState")]
@@ -104,7 +117,7 @@ namespace PullRequestBot.Command
         {
             TableQuery<PullRequestState> query = new TableQuery<PullRequestState>().Where(
                 TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, comment.repository.full_name),
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, comment.repository.full_name.ToPartitionKey()),
                     TableOperators.And,
                     TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal,  comment.pull_request.id.ToString())));
             var pullRequetStates = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
@@ -123,38 +136,18 @@ namespace PullRequestBot.Command
 
         [FunctionName("CreateWorkItemCommand_CreateWorkItem")]
         public async Task<WorkItem> CreateWorkItem(
-            [ActivityTrigger] PullRequestReviewComment parentReviewComment,
+            [ActivityTrigger] JObject parentReviewComment,
             ILogger log
         )
         {
             var workItem = new WorkItemSource()
             {
-                Title = $"SonarCloud Issue [{parentReviewComment.PullRequestReviewId}][{parentReviewComment.Id}]",
-                Description = parentReviewComment.Body
+                Title = $"SonarCloud Issue [{parentReviewComment["PullRequestReviewId"]}][{parentReviewComment["Id"]}]",
+                Description = parentReviewComment["Body"].ToString()
             };
             WorkItem createdWorkItem = await _workItemRepository.CreateWorkItem(workItem);
             return createdWorkItem;
         }
-
-        [FunctionName("PullRequestEntity")]
-        public async Task<PullRequestStateContext> PullReuestEntity(
-            [EntityTrigger] IDurableEntityContext ctx)
-        {
-            var current = ctx.GetState<PullRequestStateContext>();
-            var input = ctx.GetInput<PullRequestStateContext>();
-
-            switch (ctx.OperationName)
-            {
-                case "get":
-                    break;
-                case "update":
-                    current = input;
-                    break;
-            }
-            ctx.SetState(current);
-            return current;
-        }
-
 
     }
 }

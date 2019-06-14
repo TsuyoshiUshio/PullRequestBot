@@ -29,7 +29,7 @@ namespace PullRequestLibrary.Test.Model
             Assert.Equal("foo", document[0].Value as string);
             // Description
             Assert.Equal(Operation.Add, document[1].Operation);
-            Assert.Equal("/fields/System.Description", document[1].Path);
+            Assert.Equal("/fields/Microsoft.VSTS.TCM.SystemInfo", document[1].Path);
             Assert.Equal("bar", document[1].Value as string);
         }
     }
