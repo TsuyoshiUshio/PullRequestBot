@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace PullRequestLibrary.Model
 {
-    public class PullRequest
+    public class PullRequestState : TableEntity
     {
-        // Repository Id 
-        public string PartitionKey { get; set; }
-        // Pull Request Id 
-        public string RowKey { get; set; }
+        // PartitionKey: Repository Full Name (e.g. TsuyoshiUshio/VulnerableApp)  
+        // RowKey: Pull Request Id 
+
         // Status (Open/Close)
         public string Status { get; set; }
         // Guid as a key of Entity Id. 

@@ -10,7 +10,10 @@ using Newtonsoft.Json;
 using PullRequestLibrary;
 using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Dynamitey;
+using Newtonsoft.Json.Linq;
+using PullRequestLibrary.Command;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
+using PullRequestBot.Command;
 
 namespace PullRequestBot
 {
@@ -40,20 +43,31 @@ namespace PullRequestBot
         public async Task<IActionResult> GitHubPRCommentHook(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
             HttpRequest req,
+            [OrchestrationClient]IDurableOrchestrationClient starter,
             ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             log.LogInformation(requestBody);
             // Parse the request 
             var comment = JsonConvert.DeserializeObject<PRCommentCreated>(requestBody);
-            // comment.comment.body
-            // Parse the command 
 
-            // Get the parent comment recursively
-            // Get the Single comment of the parent
-            // Create a work item  
+            // Start Orchestrator
+            var commandName = comment.CommandName();
+            
+            if (!string.IsNullOrEmpty(commandName))
+            {
+                string instanceId = await starter.StartNewAsync("CreateWorkItemCommand", comment);
+                log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
+                DurableOrchestrationStatus status = await starter.GetStatusAsync(instanceId, false, false);
+                return (ActionResult) new OkObjectResult(status);
+            } else
+            {
+                var status = new DurableOrchestrationStatus();
+                status.RuntimeStatus = OrchestrationRuntimeStatus.Completed;
+                return (ActionResult) new OkObjectResult(status);
+            }
 
-            return (ActionResult)new OkObjectResult($"Done");
         }
+
     }
 }

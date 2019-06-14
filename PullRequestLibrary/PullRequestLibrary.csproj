@@ -11,4 +11,10 @@
     <PackageReference Include="Octokit" Version="0.32.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Microsoft.WindowsAzure.Storage">
+      <HintPath>..\..\..\..\.nuget\packages\windowsazure.storage\9.3.1\lib\netstandard1.3\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

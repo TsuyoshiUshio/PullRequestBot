@@ -25,7 +25,7 @@ namespace PullRequestLibrary.Model
             document.Add(new JsonPatchOperation()
             {
                 Operation = Operation.Add,
-                Path = "/fields/System.Description",
+                Path = "/fields/Microsoft.VSTS.TCM.SystemInfo",  // Bug : /fields/Microsoft.VSTS.TCM.SystemInfo Task : /fields/System.Description
                 Value = Description
             });
             return document;

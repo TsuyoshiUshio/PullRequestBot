@@ -28,6 +28,7 @@ namespace PullRequestBot
 
         private static readonly string GitHubRepositoryOwner = Environment.GetEnvironmentVariable(GitHubRepositoryOwnerSetting);
         private static readonly string GitHubRepositoryName = Environment.GetEnvironmentVariable(GitHubRepositoryNameSetting);
+
         public void Configure(IWebJobsBuilder builder)
         {
             builder.Services.AddSingleton<IGitHubRepositoryContext>(GetGitHubRepositoryContext());

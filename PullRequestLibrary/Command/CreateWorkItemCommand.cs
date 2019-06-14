@@ -11,6 +11,11 @@ namespace PullRequestLibrary.Command
     {
         public async Task Execute(ICommandContext context)
         {
+            // Get Parent Info 
+            // Ask the entity
+            // Create a work item
+            
+            
             return;
         }
     }
