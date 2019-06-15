@@ -10,9 +10,11 @@ namespace PullRequestLibrary.Model
         public PullRequestStateContext()
         {
             CreatedWorkItem = new List<CreatedWorkItem>();
+            CreatedReviewComment = new List<CreatedReviewComment>();
         }
 
         public List<CreatedWorkItem> CreatedWorkItem { get; set; }
+        public List<CreatedReviewComment> CreatedReviewComment { get; set; }
 
         public Boolean HasCreatedWorkItem(int commentId)
         {
@@ -22,6 +24,11 @@ namespace PullRequestLibrary.Model
         public void Add(CreatedWorkItem workItem)
         {
             CreatedWorkItem.Add(workItem);
+        }
+
+        public void Add(CreatedReviewComment comment)
+        {
+            CreatedReviewComment.Add(comment);
         }
     }
 }

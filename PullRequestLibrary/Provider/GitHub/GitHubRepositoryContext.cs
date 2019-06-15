@@ -9,11 +9,17 @@ namespace PullRequestLibrary.Provider.GitHub
     {
         string Name { get; set; }
         string Owner { get; set; }
+        string GetFullNameWithUnderscore();
     }
 
     public class GitHubRepositoryContext : IGitHubRepositoryContext
     {
         public string Owner { get; set; }
         public string Name { get; set; }
+
+        public string GetFullNameWithUnderscore()
+        {
+            return Owner + "_" + Name;
+        }
     }
 }

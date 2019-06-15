@@ -16,6 +16,7 @@ using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json.Linq;
+using PullRequestBot.Command.PullRequestStateUtility;
 using PullRequestBot.Entity;
 using PullRequestLibrary.Model;
 using PullRequest = Octokit.PullRequest;
@@ -50,14 +51,12 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             var parentReviewComment = await context.CallActivityAsync<JObject>("CreateWorkItemCommand_GetParentReview", comment);
             // Get the State of the PullRequestState
             var pullRequestState =
-                await context.CallActivityAsync<PullRequestState>("CreateWorkItemCommand_GetPullRequestState", comment);
+                await context.CallActivityAsync<PullRequestState>("PullRequestStateUtility_GetPullRequestState", new PullRequestStateKey {
+                    PartitionKey = comment.repository.full_name.ToPartitionKey(),
+                    RowKey = comment.pull_request.id.ToString()});
             
             // Ask the entity has duplication  
             string entityId = pullRequestState?.EntityId ?? context.NewGuid().ToString();
-
-            EntityId id = new EntityId(nameof(PullRequestEntity), entityId);
-    
-
             var pullRequestDetailContext = await context.CallEntityAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestEntity), entityId), "get", new PullRequestStateContext());
 
             // If you don't start CI however, already have a work item comment. (maybe it is rare case)
@@ -87,7 +86,7 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             pullRequestState.PartitionKey = pullRequestState.PartitionKey ?? comment.repository.full_name.ToPartitionKey();
             pullRequestState.RowKey = pullRequestState.RowKey ?? comment.pull_request.id.ToString(); 
 
-            await context.CallActivityAsync("CreateWorkItemCommand_CreateOrUpdatePullRequestState", pullRequestState);
+            await context.CallActivityAsync("PullRequestStateUtility_CreateOrUpdatePullRequestState", pullRequestState);
 
             return outputs;
         }
@@ -107,31 +106,6 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
                 // GitHub Client Library's exception can't serializable
                 throw new ArgumentException(e.Message);
             }
-        }
-
-        [FunctionName("CreateWorkItemCommand_GetPullRequestState")]
-        public async Task<PullRequestState> GetPullRequestState(
-            [ActivityTrigger] PRCommentCreated comment, 
-            [Table("PullRequestState")] CloudTable cloudTable,
-            ILogger log)
-        {
-            TableQuery<PullRequestState> query = new TableQuery<PullRequestState>().Where(
-                TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, comment.repository.full_name.ToPartitionKey()),
-                    TableOperators.And,
-                    TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal,  comment.pull_request.id.ToString())));
-            var pullRequetStates = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
-            return pullRequetStates.Results.FirstOrDefault(); // Since we specify one record, it should be only one or null.
-        }
-
-        [FunctionName("CreateWorkItemCommand_CreateOrUpdatePullRequestState")]
-        public async Task CreateOrUpdatePullRequestState(
-            [ActivityTrigger] PullRequestState state,
-            [Table("PullRequestState")] IAsyncCollector<PullRequestState> collector,
-            ILogger log)
-        {
-
-            await collector.AddAsync(state);
         }
 
         [FunctionName("CreateWorkItemCommand_CreateWorkItem")]
