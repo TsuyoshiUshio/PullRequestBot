@@ -31,11 +31,11 @@ namespace PullRequestBot.Command.PullRequestStateUtility
         [FunctionName("PullRequestStateUtility_CreateOrUpdatePullRequestState")]
         public async Task CreateOrUpdatePullRequestState(
             [ActivityTrigger] PullRequestState state,
-            [Table("PullRequestState")] IAsyncCollector<PullRequestState> collector,
+            [Table("PullRequestState")] CloudTable cloudTable,
             ILogger log)
         {
-
-            await collector.AddAsync(state);
+            TableOperation insertOrReplaceOperation = TableOperation.InsertOrReplace(state);
+            await cloudTable.ExecuteAsync(insertOrReplaceOperation);
         }
     }
 }

@@ -8,12 +8,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PullRequestLibrary;
-using Microsoft.TeamFoundation.TestManagement.WebApi;
-using Dynamitey;
-using Newtonsoft.Json.Linq;
-using PullRequestLibrary.Command;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 using PullRequestBot.Command;
+using PullRequestBot.Command.CreatePRReviewCommand;
+using PullRequestBot.Model;
 
 namespace PullRequestBot
 {
@@ -29,14 +27,22 @@ namespace PullRequestBot
         [FunctionName("CIHook")]
         public async Task<IActionResult> CIHook(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+        [OrchestrationClient]IDurableOrchestrationClient starter,
         ILogger log)
         {
             string pullRequestId = req.Query["pullRequestId"];
             string projectKey = req.Query["projectKey"];
             string commitId = req.Query["commitId"];
             log.LogInformation($"PullRequestId: {pullRequestId} ProjectKey: {projectKey}");
-            await service.GenerateAnalysisComment(pullRequestId, projectKey, commitId);
-            return (ActionResult)new OkObjectResult($"Done");
+            var cIContext = new CIContext()
+            {
+                PullRequestId = pullRequestId,
+                ProjectKey = projectKey,
+                CommitId = commitId
+            };
+            var instanceId = await starter.StartNewAsync(nameof(CreatePRReviewCommand), cIContext);
+            DurableOrchestrationStatus status = await starter.GetStatusAsync(instanceId, false, false);
+            return (ActionResult)new OkObjectResult(status);
         }
 
         [FunctionName("GitHubPRCommentHook")]

@@ -84,7 +84,7 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             pullRequestState = pullRequestState ?? new PullRequestState();
             pullRequestState.EntityId = entityId;
             pullRequestState.PartitionKey = pullRequestState.PartitionKey ?? comment.repository.full_name.ToPartitionKey();
-            pullRequestState.RowKey = pullRequestState.RowKey ?? comment.pull_request.id.ToString(); 
+            pullRequestState.RowKey = pullRequestState.RowKey ?? comment.pull_request.number.ToString(); 
 
             await context.CallActivityAsync("PullRequestStateUtility_CreateOrUpdatePullRequestState", pullRequestState);
 
