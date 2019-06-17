@@ -13,6 +13,7 @@ namespace PullRequestLibrary.Provider.GitHub
         Task<PullRequestReviewComment> GetSingleComment(int commentId);
         Task<IReadOnlyList<PullRequestReviewComment>> GetPullRequestReviewComments(int pullRequestId);
         IGitHubRepositoryContext GitHubRepositoryContext { get; }
+        Task<PullRequestReviewComment> CreatePullRequestReplyComment(int pullRequestNumber, string body, int inReplyTo);
     }
 
 
@@ -32,6 +33,12 @@ namespace PullRequestLibrary.Provider.GitHub
         {
             var reviewComment = new PullRequestReviewCommentCreate(comment.Body, comment.CommitId, comment.Path, comment.Position);
             return client.PullRequest.ReviewComment.Create(comment.RepositoryOnwer, comment.RepositoryName, int.Parse(comment.PullRequestId), reviewComment);
+        }
+
+        public Task<PullRequestReviewComment> CreatePullRequestReplyComment(int pullRequestNumber, string body, int inReplyTo)
+        {
+            var replyComment = new PullRequestReviewCommentReplyCreate(body, inReplyTo);
+            return client.PullRequest.ReviewComment.CreateReply(context.Owner, context.Name, pullRequestNumber, replyComment);
         }
 
         public Task<PullRequestReviewComment> GetSingleComment(int commentId)

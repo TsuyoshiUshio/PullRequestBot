@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ImpromptuInterface.Optimization;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
@@ -44,6 +45,16 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
                     {
                         CommentId = comment.comment.id
                     });
+
+                var createReplyparameter = new CreateReplyParamter()
+                {
+                    PullRequestNumber = comment.pull_request.number,
+                    InReplyTo = (int)parentReviewComment["Id"],
+                    WorkItem = createdWorkItem
+                };
+
+                await context.CallActivityAsync(nameof(CreateWorkItemCommand) + "_CreateReplyComment",
+                    createReplyparameter);
             }
 
             return pullRequestDetailContext;
@@ -62,7 +73,25 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
                 Description = parentReviewComment["Body"].ToString()
             };
             WorkItem createdWorkItem = await _workItemRepository.CreateWorkItem(workItem);
+
             return createdWorkItem;
+        }
+
+        [FunctionName(nameof(CreateWorkItemCommand) + "_CreateReplyComment")]
+        public Task CreateReplyComment([ActivityTrigger] CreateReplyParamter parameter)
+        {
+            var body = $"WorkItem {parameter.WorkItem.Id} Created see [workItem]({((Microsoft.VisualStudio.Services.WebApi.ReferenceLink)parameter.WorkItem.Links.Links["html"]).Href}).";
+
+            return _gitHubRepository.CreatePullRequestReplyComment(parameter.PullRequestNumber, body,
+                parameter.InReplyTo);
+        }
+
+        public class CreateReplyParamter
+        {
+            public int PullRequestNumber { get; set; }
+            public int InReplyTo { get; set; }
+
+            public WorkItem WorkItem { get; set; }
         }
 
     }
