@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 using PullRequestBot.Command;
-using PullRequestBot.Command.CreatePRReviewCommand;
 using PullRequestBot.Command.CreateWorkItemCommand;
+using PullRequestBot.Decorator.CreatePRReviewDecorator;
 using PullRequestBot.Model;
 
 namespace PullRequestBot
@@ -34,7 +34,7 @@ namespace PullRequestBot
                 ProjectKey = projectKey,
                 CommitId = commitId
             };
-            var instanceId = await starter.StartNewAsync(nameof(CreatePRReviewCommand), cIContext);
+            var instanceId = await starter.StartNewAsync(nameof(CreatePRReviewDecorator), cIContext);
             DurableOrchestrationStatus status = await starter.GetStatusAsync(instanceId, false, false);
             return (ActionResult)new OkObjectResult(status);
         }

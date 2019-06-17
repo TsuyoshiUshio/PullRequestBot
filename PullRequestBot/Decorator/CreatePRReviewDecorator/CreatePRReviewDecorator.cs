@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using PullRequestLibrary.Provider.GitHub;
-using PullRequestLibrary.Provider.SonarCloud;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,16 +11,18 @@ using PullRequestBot.Entity;
 using PullRequestBot.Model;
 using PullRequestLibrary.Generated.SonarCloud.SearchIssue;
 using PullRequestLibrary.Model;
+using PullRequestLibrary.Provider.GitHub;
+using PullRequestLibrary.Provider.SonarCloud;
 
-namespace PullRequestBot.Command.CreatePRReviewCommand
+namespace PullRequestBot.Decorator.CreatePRReviewDecorator
 {
-    public class CreatePRReviewCommand
+    public class CreatePRReviewDecorator
     {
         private IGitHubRepository _gitHubRepository;
         private IGitHubRepositoryContext _repositoryContext;
         private ISonarCloudRepository _sonarCloudRepository;
 
-        public CreatePRReviewCommand(IGitHubRepository gitHubRepository, IGitHubRepositoryContext repositoryContext,
+        public CreatePRReviewDecorator(IGitHubRepository gitHubRepository, IGitHubRepositoryContext repositoryContext,
             ISonarCloudRepository sonarCloudRepository)
         {
             this._gitHubRepository = gitHubRepository;
@@ -32,14 +30,14 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
             this._sonarCloudRepository = sonarCloudRepository;
         }
 
-        [FunctionName(nameof(CreatePRReviewCommand))]
+        [FunctionName(nameof(CreatePRReviewDecorator))]
         public async Task Orchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
 
             var cIContext = context.GetInput<CIContext>();
             // Get issues
-            SearchIssue issues = await context.CallActivityAsync<SearchIssue>(nameof(CreatePRReviewCommand) + "_GetIssues", cIContext);
+            SearchIssue issues = await context.CallActivityAsync<SearchIssue>(nameof(CreatePRReviewDecorator) + "_GetIssues", cIContext);
 
             // Get issues that already created 
             var pullRequestState =
@@ -52,7 +50,7 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
             string entityId = pullRequestState?.EntityId ?? context.NewGuid().ToString();
             EntityStateResponse<PullRequestStateContext> response =
                 await context.CallActivityAsync<EntityStateResponse<PullRequestStateContext>>(
-                    nameof(CreatePRReviewCommand) + "_GetPullRequestStateContext", entityId);
+                    nameof(CreatePRReviewDecorator) + "_GetPullRequestStateContext", entityId);
 
             var pullRequestDetailContext = response.EntityState;
 
@@ -64,7 +62,7 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
             foreach (var issue in unCommentedIssue)
             {
                 var issueContext = (cIContext, issue);
-                var createdPrReviewComment = await context.CallActivityAsync<JObject>(nameof(CreatePRReviewCommand) + "_CreatePRReviewComment", issueContext);
+                var createdPrReviewComment = await context.CallActivityAsync<JObject>(nameof(CreatePRReviewDecorator) + "_CreatePRReviewComment", issueContext);
 
                 if (createdPrReviewComment != null)
                 {
@@ -87,7 +85,7 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
         }
 
 
-        [FunctionName(nameof(CreatePRReviewCommand) + "_CreatePRReviewComment")]
+        [FunctionName(nameof(CreatePRReviewDecorator) + "_CreatePRReviewComment")]
         public async Task<JObject> CreatePRReviewCommentAsync(
             [ActivityTrigger] IDurableActivityContext context)
         {
@@ -118,7 +116,7 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
             return null;
         }
 
-        [FunctionName(nameof(CreatePRReviewCommand) + "_GetIssues")]
+        [FunctionName(nameof(CreatePRReviewDecorator) + "_GetIssues")]
         public async Task<SearchIssue> CreateWorkItem(
             [ActivityTrigger] CIContext context,
             ILogger log
@@ -128,7 +126,7 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
             
         }
 
-        [FunctionName(nameof(CreatePRReviewCommand) + "_GetPullRequestStateContext")]
+        [FunctionName(nameof(CreatePRReviewDecorator) + "_GetPullRequestStateContext")]
         public async Task<EntityStateResponse<PullRequestStateContext>> GetPullRequestStateContext(
             [ActivityTrigger] string entityId,
             [OrchestrationClient] IDurableOrchestrationClient client,
