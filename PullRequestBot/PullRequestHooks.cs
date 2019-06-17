@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using PullRequestLibrary;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 using PullRequestBot.Command;
 using PullRequestBot.Command.CreatePRReviewCommand;
@@ -18,12 +17,6 @@ namespace PullRequestBot
 {
     public class PullRequestHooks
     {
-        private ICIHookService service;
-
-        public PullRequestHooks(ICIHookService service)
-        {
-            this.service = service;
-        }
 
         [FunctionName("CIHook")]
         public async Task<IActionResult> CIHook(

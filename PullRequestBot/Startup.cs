@@ -10,7 +10,6 @@ using System.Net.Http;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 using Octokit;
 using PullRequestLibrary;
-using PullRequestLibrary.Command;
 using PullRequestLibrary.Provider.AzureDevOps;
 using PullRequestLibrary.Provider.SonarCloud;
 
@@ -37,13 +36,11 @@ namespace PullRequestBot
             builder.Services.AddSingleton<IGitHubRepository, GitHubRepository>();
             builder.Services.AddSingleton<ISonarCloudRepository, SonarCloudRepository>();
 
-            builder.Services.AddSingleton<ICIHookService, CIHookService>();
 
             VssConnection connection = CreateVssConnection();
             builder.Services.AddSingleton<IWorkItemRepository>(
                 new WorkItemRepository(GetWorkItemTrackingHttpClient(connection)));
 
-            builder.Services.AddTransient<ICommandContext, CommandContext>();
         }
 
         private IGitHubRepositoryContext GetGitHubRepositoryContext()

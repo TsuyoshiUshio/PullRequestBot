@@ -11,7 +11,6 @@ using PullRequestBot;
 using PullRequestLibrary;
 using PullRequestLibrary.Provider.GitHub;
 using PullRequestLibrary.Provider.SonarCloud;
-using PullRequestLibrary.Command;
 using PullRequestLibrary.Provider.AzureDevOps;
 
 namespace PullRequestBot.Test
@@ -105,8 +104,6 @@ namespace PullRequestBot.Test
             Assert.NotNull(sonarCloudRepository);
             Assert.NotNull(((SonarCloudRepository)sonarCloudRepository).context);
 
-            var ciHookService = provider.GetService<ICIHookService>();
-            Assert.NotNull(ciHookService);
         }
 
         [Fact]
@@ -121,19 +118,6 @@ namespace PullRequestBot.Test
             Assert.NotNull(workItemRepository);
         }
 
-        [Fact]
-        public void SetupCommandHookService()
-        {
-            Setup("foo", "bar", "baz", "qux", "https://dev.azure.com/quux/foobar", "corge");
-            var startup = new StartupMock();
-            var mock = new WebJobsBuilderMock(new ServiceCollection());
-            startup.Configure(mock);
-            var provider = mock.Services.BuildServiceProvider();
-            var commandContext = provider.GetService<ICommandContext>();
-            Assert.NotNull(commandContext);
-
-
-        }
 
         public class StartupMock : Startup
         {
