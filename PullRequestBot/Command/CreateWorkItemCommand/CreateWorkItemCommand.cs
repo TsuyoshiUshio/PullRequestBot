@@ -1,20 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
-using Octokit;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 using PullRequestLibrary.Provider.AzureDevOps;
 using PullRequestLibrary.Provider.GitHub;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
-using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json.Linq;
 using PullRequestBot.Command.PullRequestStateUtility;
 using PullRequestBot.Entity;
@@ -34,7 +26,7 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             _workItemRepository = workItemRepository;
         }
 
-        [FunctionName("CreateWorkItemCommand")]
+        [FunctionName(nameof(CreateWorkItemCommand))]
         public async Task<List<string>> RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
@@ -48,7 +40,7 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
 
             // Get the parent review comment
             // PullRequestReviewComment can't deserialize. 
-            var parentReviewComment = await context.CallActivityAsync<JObject>("CreateWorkItemCommand_GetParentReview", comment);
+            var parentReviewComment = await context.CallActivityAsync<JObject>(nameof(CreateWorkItemCommand) +"_GetParentReview", comment);
             // Get the State of the PullRequestState
             var pullRequestState =
                 await context.CallActivityAsync<PullRequestState>("PullRequestStateUtility_GetPullRequestState", new PullRequestStateKey {
@@ -57,22 +49,16 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             
             // Ask the entity has duplication  
             string entityId = pullRequestState?.EntityId ?? context.NewGuid().ToString();
-            var pullRequestDetailContext = await context.CallEntityAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestEntity), entityId), "get", new PullRequestStateContext());
+            EntityStateResponse<PullRequestStateContext> response =
+                await context.CallActivityAsync<EntityStateResponse<PullRequestStateContext>>(
+                    nameof(CreateWorkItemCommand) + "_GetPullRequestStateContext", entityId);
 
+            var pullRequestDetailContext = response.EntityState;
             // If you don't start CI however, already have a work item comment. (maybe it is rare case)
             pullRequestDetailContext = pullRequestDetailContext ?? new PullRequestStateContext();
 
             // create a work item
-            if (!pullRequestDetailContext.HasCreatedWorkItem(comment.comment.id))
-            {
-                WorkItem createdWorkItem =
-                    await context.CallActivityAsync<WorkItem>("CreateWorkItemCommand_CreateWorkItem",
-                        parentReviewComment);
-                pullRequestDetailContext.Add(
-                    new CreatedWorkItem() {
-                        CommentId = comment.comment.id
-                        });
-            }
+            pullRequestDetailContext = await ExecuteAsync(context, pullRequestDetailContext, comment, parentReviewComment);
              
             // update Entity 
 
@@ -91,7 +77,25 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             return outputs;
         }
 
-        [FunctionName("CreateWorkItemCommand_GetParentReview")]
+        protected async Task<PullRequestStateContext> ExecuteAsync(IDurableOrchestrationContext context, PullRequestStateContext pullRequestDetailContext,
+            PRCommentCreated comment, JObject parentReviewComment)
+        {
+            if (!pullRequestDetailContext.HasCreatedWorkItem(comment.comment.id))
+            {
+                WorkItem createdWorkItem =
+                    await context.CallActivityAsync<WorkItem>(nameof(CreateWorkItemCommand) +"_CreateWorkItem",
+                        parentReviewComment);
+                pullRequestDetailContext.Add(
+                    new CreatedWorkItem()
+                    {
+                        CommentId = comment.comment.id
+                    });
+            }
+
+            return pullRequestDetailContext;
+        }
+
+        [FunctionName(nameof(CreateWorkItemCommand)+"_GetParentReview")]
         public async Task<JObject> GetParentReviewAsync([ActivityTrigger] PRCommentCreated comment, ILogger log)
         {
 
@@ -108,7 +112,7 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             }
         }
 
-        [FunctionName("CreateWorkItemCommand_CreateWorkItem")]
+        [FunctionName(nameof(CreateWorkItemCommand)+"_CreateWorkItem")]
         public async Task<WorkItem> CreateWorkItem(
             [ActivityTrigger] JObject parentReviewComment,
             ILogger log
@@ -121,6 +125,16 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             };
             WorkItem createdWorkItem = await _workItemRepository.CreateWorkItem(workItem);
             return createdWorkItem;
+        }
+
+        [FunctionName(nameof(CreateWorkItemCommand) + "_GetPullRequestStateContext")]
+        public async Task<EntityStateResponse<PullRequestStateContext>> GetPullRequestStateContext(
+            [ActivityTrigger] string entityId,
+            [OrchestrationClient] IDurableOrchestrationClient client,
+            ILogger log
+        )
+        {
+            return await client.ReadEntityStateAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestEntity), entityId));
         }
 
     }

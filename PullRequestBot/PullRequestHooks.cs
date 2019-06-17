@@ -11,6 +11,7 @@ using PullRequestLibrary;
 using PullRequestLibrary.Generated.GitHub.PRCommentCreated;
 using PullRequestBot.Command;
 using PullRequestBot.Command.CreatePRReviewCommand;
+using PullRequestBot.Command.CreateWorkItemCommand;
 using PullRequestBot.Model;
 
 namespace PullRequestBot
@@ -62,7 +63,7 @@ namespace PullRequestBot
             
             if (!string.IsNullOrEmpty(commandName))
             {
-                string instanceId = await starter.StartNewAsync("CreateWorkItemCommand", comment);
+                string instanceId = await starter.StartNewAsync(nameof(CreateWorkItemCommand), comment);
                 log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
                 DurableOrchestrationStatus status = await starter.GetStatusAsync(instanceId, false, false);
                 return (ActionResult) new OkObjectResult(status);

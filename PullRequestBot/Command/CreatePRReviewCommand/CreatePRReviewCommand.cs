@@ -73,6 +73,8 @@ namespace PullRequestBot.Command.CreatePRReviewCommand
 
                 }
             }
+
+
             await context.CallEntityAsync<PullRequestStateContext>(new EntityId(nameof(PullRequestEntity), entityId), "update", pullRequestDetailContext);
 
             pullRequestState = pullRequestState ?? new PullRequestState();
