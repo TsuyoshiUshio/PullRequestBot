@@ -43,7 +43,7 @@ namespace PullRequestBot.Command.CommandBaseCommand
             var pullRequestState =
                 await context.CallActivityAsync<PullRequestState>("PullRequestStateUtility_GetPullRequestState", new PullRequestStateKey {
                     PartitionKey = comment.repository.full_name.ToPartitionKey(),
-                    RowKey = comment.pull_request.id.ToString()});
+                    RowKey = comment.pull_request.number.ToString()});
             
             // Ask the entity has duplication  
             string entityId = pullRequestState?.EntityId ?? context.NewGuid().ToString();
@@ -56,7 +56,7 @@ namespace PullRequestBot.Command.CommandBaseCommand
             pullRequestDetailContext = pullRequestDetailContext ?? new PullRequestStateContext();
 
             // create a work item
-            pullRequestDetailContext = await ExecuteAsync(context, pullRequestDetailContext, comment, parentReviewComment);
+            pullRequestDetailContext = await ExecuteAsync(context, pullRequestDetailContext, comment, parentReviewComment, new EntityId(nameof(PullRequestEntity), entityId));
              
             // update Entity 
 
@@ -77,6 +77,6 @@ namespace PullRequestBot.Command.CommandBaseCommand
 
         protected abstract Task<PullRequestStateContext> ExecuteAsync(IDurableOrchestrationContext context,
             PullRequestStateContext pullRequestDetailContext,
-            PRCommentCreated comment, JObject parentReviewComment);
+            PRCommentCreated comment, JObject parentReviewComment, EntityId entityId);
     }
 }

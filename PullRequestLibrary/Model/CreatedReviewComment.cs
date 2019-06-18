@@ -8,5 +8,6 @@ namespace PullRequestLibrary.Model
     {
         public int CommentId { get; set; }
         public string IssueId { get; set; }
+        public string ProjectKey { get; set; }
     }
 }

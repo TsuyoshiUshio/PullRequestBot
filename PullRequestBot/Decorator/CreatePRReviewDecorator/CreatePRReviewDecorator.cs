@@ -54,7 +54,10 @@ namespace PullRequestBot.Decorator.CreatePRReviewDecorator
 
             var pullRequestDetailContext = response.EntityState;
 
-            pullRequestDetailContext = pullRequestDetailContext ?? new PullRequestStateContext();
+            pullRequestDetailContext = pullRequestDetailContext ?? new PullRequestStateContext()
+            {
+                PullRequestNumber = int.Parse(cIContext.PullRequestId)
+            };
 
             var unCommentedIssue = issues.issues.Where(issue => !pullRequestDetailContext.CreatedReviewComment.Contains(new CreatedReviewComment() {IssueId = issue.key})).ToList();
 
@@ -67,7 +70,7 @@ namespace PullRequestBot.Decorator.CreatePRReviewDecorator
                 if (createdPrReviewComment != null)
                 {
                     pullRequestDetailContext.Add(new CreatedReviewComment()
-                        { IssueId = issue.key, CommentId = (int)createdPrReviewComment["Id"] });
+                        { IssueId = issue.key, CommentId = (int)createdPrReviewComment["Id"], ProjectKey = cIContext.ProjectKey});
 
                 }
             }
@@ -93,14 +96,13 @@ namespace PullRequestBot.Decorator.CreatePRReviewDecorator
             var cIContext = issueContext.Item1;
             var issue = issueContext.Item2;
 
-
             var path = issue.component.Replace($"{cIContext.ProjectKey}:", "");
             if (path != cIContext.ProjectKey)
             {
                 PullRequestReviewComment result = await _gitHubRepository.CreatePullRequestReviewComment(
                     new PullRequestLibrary.Model.Comment
                     {
-                        Body = $"[{issue.type}] {issue.message}",
+                        Body = $"**{issue.type}**\n> {issue.message}\n See [details](https://sonarcloud.io/project/issues?id={cIContext.ProjectKey}&open={issue.key}&pullRequest={cIContext.PullRequestId}&resolved=false)",
                         RepositoryOnwer = _repositoryContext.Owner,
                         RepositoryName = _repositoryContext.Name,
                         CommitId = cIContext.CommitId,

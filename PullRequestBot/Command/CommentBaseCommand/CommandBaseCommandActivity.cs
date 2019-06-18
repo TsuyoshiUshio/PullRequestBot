@@ -30,6 +30,7 @@ namespace PullRequestBot.Command.CommandBaseCommand
             {
                 // GitHub Client Library's domain object can't serializable.
                 var result =  await _gitHubRepository.GetSingleComment(comment.comment.in_reply_to_id);
+                
                 return result.ToJObject();
             }
             catch (Exception e)

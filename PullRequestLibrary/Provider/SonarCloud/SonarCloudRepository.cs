@@ -9,6 +9,7 @@ namespace PullRequestLibrary.Provider.SonarCloud
     public interface ISonarCloudRepository
     {
         Task<SearchIssue> GetIssues(string pullRequestId, string projectKey);
+        Task<SearchIssue> GetIssues(string pullRequestId, string projectKey, string issueKey);
     }
 
     public class SonarCloudRepository : ISonarCloudRepository
@@ -22,6 +23,11 @@ namespace PullRequestLibrary.Provider.SonarCloud
         public Task<SearchIssue> GetIssues(string pullRequestId, string projectKey)
         {
             return context.GetAsync<SearchIssue>($"https://sonarcloud.io/api/issues/search?pullRequest={pullRequestId}&projects={projectKey}");
+        }
+
+        public Task<SearchIssue> GetIssues(string pullRequestId, string projectKey, string issueKey)
+        {
+            return context.GetAsync<SearchIssue>($"https://sonarcloud.io/api/issues/search?pullRequest={pullRequestId}&projects={projectKey}&issues={issueKey}");
         }
     }
 }

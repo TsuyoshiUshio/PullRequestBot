@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ImpromptuInterface.Optimization;
 using Microsoft.Azure.WebJobs;
@@ -12,6 +13,7 @@ using Newtonsoft.Json.Linq;
 using PullRequestBot.Command.PullRequestStateUtility;
 using PullRequestBot.Entity;
 using PullRequestLibrary.Model;
+using PullRequestLibrary.Provider.SonarCloud;
 using PullRequest = Octokit.PullRequest;
 
 namespace PullRequestBot.Command.CreateWorkItemCommand
@@ -19,10 +21,12 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
     public class CreateWorkItemCommand : CommandBaseCommand.CommandBaseCommand
     {
         private readonly IWorkItemRepository _workItemRepository;
+        private readonly ISonarCloudRepository _sonarCloudRepository;
 
-        public CreateWorkItemCommand(IGitHubRepository gitHubRepository, IWorkItemRepository workItemRepository) : base(gitHubRepository)
+        public CreateWorkItemCommand(IGitHubRepository gitHubRepository, IWorkItemRepository workItemRepository, ISonarCloudRepository sonarCloudRepository) : base(gitHubRepository)
         {
             _workItemRepository = workItemRepository;
+            _sonarCloudRepository = sonarCloudRepository;
         }
 
         [FunctionName(nameof(CreateWorkItemCommand))]
@@ -32,14 +36,15 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
             return RunOrchestrator(context);
         }
 
-        protected override async Task<PullRequestStateContext> ExecuteAsync(IDurableOrchestrationContext context, PullRequestStateContext pullRequestDetailContext,
-            PRCommentCreated comment, JObject parentReviewComment)
+        protected override async Task<PullRequestStateContext> ExecuteAsync(IDurableOrchestrationContext context,
+            PullRequestStateContext pullRequestDetailContext,
+            PRCommentCreated comment, JObject parentReviewComment, EntityId entityId)
         {
             if (!pullRequestDetailContext.HasCreatedWorkItem(comment.comment.id))
             {
                 WorkItem createdWorkItem =
                     await context.CallActivityAsync<WorkItem>(nameof(CreateWorkItemCommand) +"_CreateWorkItem",
-                        parentReviewComment);
+                        (parentReviewComment, pullRequestDetailContext));
                 pullRequestDetailContext.Add(
                     new CreatedWorkItem()
                     {
@@ -63,14 +68,26 @@ namespace PullRequestBot.Command.CreateWorkItemCommand
 
         [FunctionName(nameof(CreateWorkItemCommand)+"_CreateWorkItem")]
         public async Task<WorkItem> CreateWorkItem(
-            [ActivityTrigger] JObject parentReviewComment,
+            [ActivityTrigger] Tuple<JObject, PullRequestStateContext> createWorkItemParameter,
             ILogger log
         )
         {
+
+            var parentReviewComment = createWorkItemParameter.Item1;
+            var pullRequestStateContext = createWorkItemParameter.Item2;
+
+
+            var currentReviewComment = pullRequestStateContext.CreatedReviewComment
+                .FirstOrDefault(p => p.CommentId == (int) parentReviewComment["Id"]);
+            var issues =
+                await _sonarCloudRepository.GetIssues(pullRequestStateContext.PullRequestNumber.ToString(), currentReviewComment.ProjectKey, currentReviewComment.IssueId);
+            var currentIssue = issues.issues.FirstOrDefault();
+
+            var body = $"<b>{currentIssue.type}</b></p>{currentIssue.message}</p>See more <a href=\"https://sonarcloud.io/project/issues?id={currentReviewComment.ProjectKey}&open={currentIssue.key}&pullRequest={pullRequestStateContext.PullRequestNumber}&resolved=false\">details</a>.";
             var workItem = new WorkItemSource()
             {
-                Title = $"SonarCloud Issue [{parentReviewComment["PullRequestReviewId"]}][{parentReviewComment["Id"]}]",
-                Description = parentReviewComment["Body"].ToString()
+                Title = $"SonarCloud GitHub Issue PR {pullRequestStateContext.PullRequestNumber}: {currentIssue.message}",
+                Description = body
             };
             WorkItem createdWorkItem = await _workItemRepository.CreateWorkItem(workItem);
 

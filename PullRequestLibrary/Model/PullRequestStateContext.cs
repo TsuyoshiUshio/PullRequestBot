@@ -14,6 +14,8 @@ namespace PullRequestLibrary.Model
             CreatedReviewComment = new HashSet<CreatedReviewComment>(new CreatedReviewCommentComparer());
         }
 
+        public int PullRequestNumber { get; set; }
+
         public HashSet<CreatedWorkItem> CreatedWorkItem { get; set; }
         public HashSet<CreatedReviewComment> CreatedReviewComment { get; set; }
 

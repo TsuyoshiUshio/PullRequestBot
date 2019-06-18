@@ -25,7 +25,7 @@ namespace PullRequestBot
         ILogger log)
         {
             string pullRequestId = req.Query["pullRequestId"];
-            string projectKey = req.Query["projectKey"];
+            string projectKey = req.Query["ProjectKey"];
             string commitId = req.Query["commitId"];
             log.LogInformation($"PullRequestId: {pullRequestId} ProjectKey: {projectKey}");
             var cIContext = new CIContext()
